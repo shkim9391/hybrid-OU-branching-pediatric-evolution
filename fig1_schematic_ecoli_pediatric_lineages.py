@@ -180,5 +180,5 @@ cb = plt.colorbar(sm, cax=cax)
 cb.set_label("Trait / fitness (schematic)")
 
 #fig.suptitle("Linking OU traits and branching to lineage structures", fontsize=15, y=0.98)
-plt.savefig("figure1_schematic_ltee_pediatric_lineages.png", dpi=1500, bbox_inches="tight")
+plt.savefig("figure1_schematic_ltee_pediatric_lineages.png", dpi=300, bbox_inches="tight")
 plt.show()
