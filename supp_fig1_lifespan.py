@@ -46,5 +46,5 @@ plt.annotate("≈ 1,825 generations (20 min/div) \nLong-Term Evolution Experimen
              xy=(ecoli_days, 1), xytext=(ecoli_days*1.6, 1.05))
 
 plt.tight_layout()
-plt.savefig("supp_figure1a_lifespan_dx_comparison_log.png", dpi=1500, bbox_inches="tight")
+plt.savefig("supp_figure1a_lifespan_dx_comparison_log.png", dpi=300, bbox_inches="tight")
 plt.show()
