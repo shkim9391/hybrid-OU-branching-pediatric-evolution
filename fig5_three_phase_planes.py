@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Oct 14 21:40:14 2025
-
-@author: seung-hwan.kim
-"""
 
 # figure5_three_phase_planes.py
 # Three phase-plane panels (WT, priA, recG) for a hybrid OU–Branching model
