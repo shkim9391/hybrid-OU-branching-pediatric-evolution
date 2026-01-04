@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Oct 15 22:55:18 2025
-
-@author: seung-hwan.kim
-"""
 
 # fig1_schematic_ecoli_pediatric_lineages.py
 
