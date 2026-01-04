@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Sat Oct 18 14:11:21 2025
-
-@author: seung-hwan.kim
-"""
 
 # figure7_pediatric_precision_showcase_final_priA.py
 # Composite 4-panel figure (Panels A–D) + automatic TIFF + caption PDF
