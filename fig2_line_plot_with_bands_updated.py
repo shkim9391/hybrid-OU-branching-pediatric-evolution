@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Oct 15 22:41:26 2025
-
-@author: seung-hwan.kim
-"""
 
 # fig1_line_plot_with_bands_updated.py
 # Log-scale plot with ±SD shaded bands, safe zero handling, replicate aggregation, no hard-coded colors.
