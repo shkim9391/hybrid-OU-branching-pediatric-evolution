@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Sat Oct 18 10:46:27 2025
-
-@author: seung-hwan.kim
-"""
 
 # figure6_lineage_graph_three_panels_t20.py
 # Hybrid OU–branching lineage snapshots for WT, priA, recG in one figure.
