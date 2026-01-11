@@ -66,7 +66,7 @@ def env_from_paths(X):
     return mean, lo, hi
 
 # ---------- Load data ----------
-df = pd.read_csv("mut_freq_data.csv")
+df = pd.read_csv("mut_freq_data_clean.csv")
 
 # Robust column checks (assumes columns exist in the CSV)
 required = {"background","replicate","t","x"}
