@@ -163,7 +163,7 @@ axes[0].set_ylabel(r"Population size $N_t$ (log scale)")
 #fig.tight_layout(rect=[0, 0, 1, 0.98])
 
 # ------------------ Save ------------------
-fig.savefig("figure5_three_phase_planes.png", dpi=1500, bbox_inches="tight")
+fig.savefig("figure5_three_phase_planes.png", dpi=600, bbox_inches="tight")
 fig.savefig("figure5_three_phase_planes.pdf", bbox_inches="tight")
 
 print("Saved: figure5_three_phase_planes.(png|pdf)")
