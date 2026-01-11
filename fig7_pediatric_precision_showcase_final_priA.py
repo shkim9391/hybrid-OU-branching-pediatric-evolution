@@ -42,12 +42,12 @@ def exposure_curve(t_grid, doses, ke=0.10):
     return C
 
 # -----------------------------
-# Pediatric lineage OU profiles (from your Table 1)
+# Pediatric lineage OU profiles (Option A, replicate-grouped MLEs on log10 scale from Table 1)
 # -----------------------------
 PROFILES = {
-    "WT":   {"muY": 4.14e-6,  "theta": 0.1000, "sigma": 9.178e-6},
-    "priA": {"muY": 1.495e-5, "theta": 0.1126, "sigma": 6.645e-6},
-    "recG": {"muY": 1.578e-7, "theta": 0.1147, "sigma": 4.007e-7},
+    "WT":   {"muY": -6.799080, "theta": 0.775093, "sigma": 0.726647},
+    "priA": {"muY": -5.000374, "theta": 0.116660, "sigma": 0.436483},
+    "recG": {"muY": -7.652025, "theta": 8.515582, "sigma": 2.789438},
 }
 
 # -----------------------------
@@ -83,11 +83,16 @@ def simulate_regimen(
     N = np.empty((reps, t.size), float)
     Y[:, 0] = mu0 if y0 is None else y0
     N[:, 0] = n0
-
+    
     def rates(y, c):
         hh = c / (c + EC50 + 1e-12)
-        lam = lam0    * np.exp(alpha * y - k_lam * hh)
-        mud = mu_base * np.exp(-beta * y + k_mu  * hh)
+    
+        # scale-invariant: use deviation from baseline mean phenotype
+        dy = (y - mu0)
+    
+        lam = lam0    * np.exp(alpha * dy - k_lam * hh)
+        mud = mu_base * np.exp(-beta * dy + k_mu  * hh)
+    
         lam = np.clip(lam, 0.0, 1.2)
         mud = np.clip(mud, 0.0, 1.2)
         return lam, mud
@@ -135,6 +140,14 @@ def simulate_lineage_profile(profile="priA", T=40.0, dt=0.05, lam0=0.30, mu0=0.1
     edges = []
     next_id = N0
 
+    def favorable_start_y(muY):
+        y_star = muY + np.log(mu0 / lam0) / (alpha + beta)
+        return max(muY - 0.6, y_star + 0.35)
+    
+        y0 = favorable_start_y(p["muY"])
+        for _ in range(N0):
+            cells.append(dict(y=y0, alive=True, birth=0.0, death=np.nan, parent=None))
+    
     def ou_step(y_prev):
         e = np.exp(-p["theta"]*dt)
         m = p["muY"] + (y_prev - p["muY"]) * e
@@ -174,7 +187,7 @@ def simulate_lineage_profile(profile="priA", T=40.0, dt=0.05, lam0=0.30, mu0=0.1
     # Build graph and mark extant at t_snap
     G = nx.DiGraph()
     for i, c in enumerate(cells, start=1):
-        alive_at = (c["birth"] <= t_snap) and (np.isnan(c["death"]) or (c["death"] > t_snap)) and c["alive"]
+        alive_at = (c["birth"] <= t_snap) and (np.isnan(c["death"]) or (c["death"] > t_snap))
         G.add_node(i, y=c["y"], extant=bool(alive_at))
     for (u, v, lam, td) in edges:
         if td <= t_snap:
@@ -287,7 +300,7 @@ def pediatric_precision_showcase(profile="priA",
     #axA.fill_between(t, y_lo, y_hi, color="#bdd7e7", alpha=0.5, label="95% envelope", zorder=1)
     axA.plot(t, y_med, color="#08519c", lw=2.5, label="Median $Y_t$", zorder=3)
     axA.set_xlabel("Time (days)")
-    axA.set_ylabel("Phenotype $Y_t$")
+    axA.set_ylabel(r"$Y_t=\log_{10}(\mathrm{mutation\ frequency})$")
     axA2 = axA.twinx()
     axA2.plot(t, C, color="#ef3b2c", lw=2.0, label="Exposure $C(t)$")
     axA2.patch.set_alpha(0)                # keep envelope visible
@@ -295,7 +308,12 @@ def pediatric_precision_showcase(profile="priA",
     # merged legend
     lines1, labels1 = axA.get_legend_handles_labels()
     lines2, labels2 = axA2.get_legend_handles_labels()
-    axA.legend(lines1 + lines2, labels1 + labels2, frameon=False, loc="center right")
+    axA.legend(
+        lines1 + lines2, labels1 + labels2,
+        frameon=False,
+        loc="lower right",
+        bbox_to_anchor=(1.0, 0.07)  # <-- increase this (0.18) to move up
+    )
     axA.set_title(f"A. Phenotypic evolution under therapy ({profile})", loc="left", fontsize=12)
 
     # --- Panel B: Population dynamics (treated vs control) ---
@@ -317,8 +335,8 @@ def pediatric_precision_showcase(profile="priA",
 
     # --- Panel C: REAL lineage architecture at t=20 from same OU params ---
     axC = fig.add_subplot(gs[1, 0])
-    G, t_snap = simulate_lineage_profile(profile=profile, T=40.0, dt=0.05, lam0=0.30, mu0=0.18,
-                                         alpha=0.8, beta=0.6, N0=3, seed=43, MAX_N=10000)
+    G, t_snap = simulate_lineage_profile(profile=profile, T=40.0, dt=0.05, lam0=0.30, mu0=0.22,
+                                         alpha=0.90, beta=0.60, N0=3, seed=43, MAX_N=10000)
     draw_lineage_on_axis(axC, G, title=f"C. Hybrid OU–branching lineage architecture ({profile}, t={t_snap:.0f})")
 
     # --- Panel D: Translational outcome map P(cure) vs (sigma, theta) ---
@@ -331,8 +349,8 @@ def pediatric_precision_showcase(profile="priA",
                     -((tgrid - PROFILES[profile]["theta"])**2) / ( (PROFILES[profile]["theta"]*0.6)**2 + 1e-30))
     pcm = axD.pcolormesh(sigma, theta, p_cure, cmap="plasma", shading="auto")
     cb = plt.colorbar(pcm, ax=axD, label="$P(\\mathrm{cure})$")
-    axD.set_xlabel("Phenotypic variance $\\sigma$")
-    axD.set_ylabel("Selection strength $\\theta$")
+    axD.set_xlabel(r"Phenotypic diffusion $\sigma$ (log10 scale)")
+    axD.set_ylabel(r"Mean reversion $\theta$")
     axD.set_title(f"D. Translational outcome map ({profile})", loc="left", fontsize=12)
 
     #fig.suptitle(f"Hybrid OU–Branching Showcase for Pediatric Precision Oncology — profile: {profile}", fontsize=14, y=0.98)
@@ -342,7 +360,7 @@ def pediatric_precision_showcase(profile="priA",
 
     ensure_dir(outfile_png)
     fig.savefig(outfile_png, dpi=600, bbox_inches="tight")
-    fig.savefig(outfile_tiff, dpi=600, bbox_inches="tight")
+    fig.savefig(outfile_tiff, dpi=600, bbox_inches="tight", format="tiff")
     plt.close(fig)
 
     # --- Caption PDF ---
