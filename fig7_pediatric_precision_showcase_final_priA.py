@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 # figure7_pediatric_precision_showcase_final_priA.py
 # Composite 4-panel figure (Panels A–D) + automatic TIFF + caption PDF
 # Profile-aware (WT / priA / recG) and now with a REAL lineage snapshot in Panel C
