@@ -1,8 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 # fig1_schematic_ecoli_pediatric_lineages.py
-
 # Schematic: E. coli LTEE lineages ↔ pediatric tumor lineages
 # Top-left: OU trait; Top-right: Branching process (birth–death);
 # Bottom: two lineage schematics (bacterial vs pediatric)
