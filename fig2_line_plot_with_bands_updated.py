@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-CSV = "mut_freq_data.csv"      # expects long/tidy columns: background, replicate, t, x
+CSV = "mut_freq_data_clean.csv"      # expects long/tidy columns: background, replicate, t, x
 OUT = "mutation_frequency_with_bands_log.png"
 
 # -----------------------------
