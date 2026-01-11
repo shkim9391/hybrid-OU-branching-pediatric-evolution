@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 # figure5_three_phase_planes.py
 # Three phase-plane panels (WT, priA, recG) for a hybrid OU–Branching model
 # Updated to use replicate-grouped OU parameters on the log10 scale (Table 1, Option A)
