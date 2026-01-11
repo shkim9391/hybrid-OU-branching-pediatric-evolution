@@ -126,7 +126,7 @@ ax.set_xlabel("Time")
 ax.set_ylabel("Mutation frequency")
 ax.legend(frameon=False, ncol=3)
 fig.tight_layout()
-fig.savefig("figure2B_fits_envelopes_wt_priA_recG.png", dpi=1500, bbox_inches="tight")
+fig.savefig("figure3_fits_envelopes_wt_priA_recG.png", dpi=300, bbox_inches="tight")
 plt.show()
 
 # ---------- AIC table (WT / priA / recG) ----------
@@ -147,8 +147,8 @@ aic_df = pd.DataFrame(rows)
 aic_df = aic_df.sort_values("AIC").reset_index(drop=True)
 aic_df["DeltaAIC"] = aic_df["AIC"] - aic_df["AIC"].min()
 
-print("\n===== AIC Comparison (Figure 2B) =====")
+print("\n===== AIC Comparison (Figure 3) =====")
 print(aic_df.to_string(index=False, float_format=lambda v: f"{v:,.6g}"))
 
-aic_df.to_csv("AIC_comparison_Fig2B.csv", index=False)
-print("\nSaved: AIC_comparison_Fig2B.csv")
+aic_df.to_csv("AIC_comparison_Fig3.csv", index=False)
+print("\nSaved: AIC_comparison_Fig3.csv")
