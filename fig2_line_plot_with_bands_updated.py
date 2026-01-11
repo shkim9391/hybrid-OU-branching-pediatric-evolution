@@ -1,4 +1,4 @@
-# fig1_line_plot_with_bands_updated.py
+# fig2_line_plot_with_bands_updated.py
 # Log-scale plot with ±SD shaded bands, safe zero handling, replicate aggregation, no hard-coded colors.
 
 import pandas as pd
@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 CSV = "mut_freq_data_clean.csv"      # expects long/tidy columns: background, replicate, t, x
-OUT = "mutation_frequency_with_bands_log.png"
+OUT = "fig2_mutation_frequency_with_bands_log.png"
 
 # -----------------------------
 # Load & clean
