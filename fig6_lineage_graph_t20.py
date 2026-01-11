@@ -55,11 +55,9 @@ def nullcline_y_star(p: Params):
     return p.muY + np.log(p.mu0 / p.lam0) / (p.alpha + p.beta)
 
 def favorable_start_y(p: Params, margin=0.35):
+    # Start slightly on the growth-favorable side of the nullcline, but not too far from muY.
     y_star = nullcline_y_star(p)
-    y0 = max(p.Y0, y_star + margin)
-    if p.theta >= 0.1 and p.sigma <= 1e-6:
-        y0 = y_star + max(margin, 0.6)
-    return y0
+    return max(p.Y0, y_star + margin)
 
 # ---------------- Simulation ----------------
 def simulate_once(p: Params, t_snap: float):
@@ -101,24 +99,28 @@ def simulate_once(p: Params, t_snap: float):
 
 def snapshot_graphs(cells, edges, t_snap):
     G_extant, G_extinct = nx.DiGraph(), nx.DiGraph()
-    alive, extinct = [], []
+
     for cid, c in cells.items():
-        alive_flag = (c["birth"] <= t_snap) and (c["death"] is None or c["death"] > t_snap)
-        if alive_flag and c["alive"]:
-            alive.append(cid)
-        elif (c["death"] and c["death"] <= t_snap) or (c["birth"] > t_snap):
-            extinct.append(cid)
-    for cid in alive:   G_extant.add_node(cid, y=cells[cid]["y"])
-    for cid in extinct: G_extinct.add_node(cid, y=cells[cid]["y"])
+        # Only consider clones that have been born by t_snap
+        if c["birth"] > t_snap:
+            continue
+
+        alive_at_snap = (c["death"] is None) or (c["death"] > t_snap)
+        if alive_at_snap:
+            G_extant.add_node(cid, y=c["y"])
+        else:
+            G_extinct.add_node(cid, y=c["y"])
 
     ext_e, exn_e, ext_w, exn_w = [], [], [], []
     for (u, v, lam, t_div) in edges:
         if t_div > t_snap:
             continue
-        if u in G_extant and v in G_extant:
+        # Edge is relevant only if BOTH nodes exist by t_snap
+        if (u in G_extant and v in G_extant):
             ext_e.append((u, v)); ext_w.append(lam)
-        elif u in G_extinct and v in G_extinct:
+        elif (u in G_extinct and v in G_extinct):
             exn_e.append((u, v)); exn_w.append(lam)
+
     return G_extant, G_extinct, ext_e, exn_e, ext_w, exn_w
 
 def scale_widths(ws, lo=0.5, hi=3.0):
@@ -147,13 +149,34 @@ def run_with_retries(p0: Params, t_snap: float, max_tries=10):
     return p, cells, edges, t_snap, nx.DiGraph(), nx.DiGraph(), [], [], [], []
 
 # ---------------- Drawing ----------------
-def draw_lineage_on_axis(ax, G_extant, G_extinct, ext_e, exn_e, ext_w, exn_w, title):
+def draw_lineage_on_axis(ax, G_extant, G_extinct, ext_e, exn_e, ext_w, exn_w, title,
+                         max_nodes_extant=None, seed=7, show_legend=False):
     G_union = nx.compose(G_extant, G_extinct)
+    rng = np.random.default_rng(seed)
+
+    # Downsample extant nodes for visualization if requested
+    if max_nodes_extant is not None and len(G_extant) > max_nodes_extant:
+        keep = rng.choice(list(G_extant.nodes), size=max_nodes_extant, replace=False)
+        keep = set(keep)
+    
+        # keep extinct as-is (or also downsample if you want)
+        G_extant = G_extant.subgraph(keep).copy()
+    
+        # filter extant edges/weights consistently
+        new_ext_e, new_ext_w = [], []
+        for (u, v), w in zip(ext_e, ext_w):
+            if u in keep and v in keep:
+                new_ext_e.append((u, v)); new_ext_w.append(w)
+        ext_e, ext_w = new_ext_e, new_ext_w
+    
+        # rebuild union after downsampling
+        G_union = nx.compose(G_extant, G_extinct)
+        
     if len(G_union) == 0:
         ax.text(0.5, 0.5, "No extant clones", ha="center", va="center")
         ax.set_title(title); ax.axis("off"); return
 
-    pos = nx.spring_layout(G_union, k=0.12, iterations=350, seed=7)
+    pos = nx.spring_layout(G_union, k=0.12, iterations=350, seed=seed)
     ext_w_scaled = scale_widths(ext_w, lo=EDGE_WIDTH_EXTANT*0.5, hi=EDGE_WIDTH_EXTANT)
     exn_w_scaled = scale_widths(exn_w, lo=EDGE_WIDTH_EXTINCT*0.5, hi=EDGE_WIDTH_EXTINCT)
 
@@ -185,36 +208,56 @@ def draw_lineage_on_axis(ax, G_extant, G_extinct, ext_e, exn_e, ext_w, exn_w, ti
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="3.5%", pad=0.02)
     cbar = plt.colorbar(sm, cax=cax)
-    cbar.set_label("Phenotype $Y_t$", rotation=270, labelpad=12)
+    cbar.set_label(r"$Y_t$ (log$_{10}$ freq)", rotation=270, labelpad=14)
 
-    ax.plot([], [], color=EDGE_COLOR_EXTANT, lw=EDGE_WIDTH_EXTANT,
-            label="Extant branch (width ∝ λ(Y))")
-    ax.plot([], [], color=EDGE_COLOR_EXTINCT, lw=EDGE_WIDTH_EXTINCT,
-            alpha=0.7, label="Extinct branch")
-
-    ax.set_title(title, fontsize=11)
+    ax.set_title(title, fontsize=12, pad=6)
     ax.axis("off")
-    ax.legend(loc="lower left", frameon=False, fontsize=8, handlelength=2.4, handletextpad=0.6)
+    
+    if show_legend:
+        ax.plot([], [], color=EDGE_COLOR_EXTANT, lw=EDGE_WIDTH_EXTANT,
+                label="Extant branch (width ∝ λ(Y))")
+        ax.plot([], [], color=EDGE_COLOR_EXTINCT, lw=EDGE_WIDTH_EXTINCT,
+                alpha=0.7, label="Extinct branch")
+        ax.legend(loc="lower left", bbox_to_anchor=(0.02, 0.02), frameon=False, fontsize=8,
+                  handlelength=2.4, handletextpad=0.6)
 
 # ---------------- Main ----------------
 def main(outfile="figure6_lineage_WT_priA_recG_t20_darkbranches.png"):
+    # Shared demography (match Figure 5)
+    DEMO = dict(lam0=0.30, mu0=0.22, alpha=0.90, beta=0.60)
+    
+    # Option A (replicate-grouped MLEs on log10 scale) — matches Fig4 + Table 1 (grouped)
     MODELS = {
-        "A. WT":   Params(muY=4.14e-6,  theta=0.10,   sigma=9.178e-6, seed=41, N0=2),
-        "B. priA": Params(muY=1.495e-5, theta=0.1126, sigma=6.645e-6, seed=42, N0=3),
-        "C. recG": Params(muY=1.578e-7, theta=0.1147, sigma=4.007e-7, seed=43,
-                          N0=4, lam0=0.32, mu0=0.18),
+        "A. WT":   Params(muY=-6.799080, theta=0.775093, sigma=0.726647,
+                          seed=41, N0=2, Y0=-6.799080 - 0.6, **DEMO),
+    
+        "B. priA": Params(muY=-5.000374, theta=0.116660, sigma=0.436483,
+                          seed=42, N0=3, Y0=-5.000374 - 0.6, **DEMO),
+    
+        "C. recG": Params(muY=-7.652025, theta=8.515582, sigma=2.789438,
+                          seed=43, N0=4, Y0=-7.652025 - 0.6, **DEMO),
     }
-
+    
     fig, axes = plt.subplots(1, 3, figsize=(16.5, 6.2))
+    
     for ax, (name, base_p) in zip(axes, MODELS.items()):
         base_p = replace(base_p, T=max(base_p.T, SNAPSHOT_TIME))
         p, cells, edges, t_snap, G_extant, G_extinct, ext_e, exn_e, ext_w, exn_w = \
             run_with_retries(base_p, t_snap=SNAPSHOT_TIME)
-        title = f"{name}  (snapshot t={SNAPSHOT_TIME:.1f}; μ={p.muY:.2e}, θ={p.theta:.4f}, σ={p.sigma:.2e})"
-        draw_lineage_on_axis(ax, G_extant, G_extinct, ext_e, exn_e, ext_w, exn_w, title)
+    
+        cap = 2000 if "priA" in name else None
+        show_legend = name.startswith("A.")
+    
+        draw_lineage_on_axis(
+            ax, G_extant, G_extinct, ext_e, exn_e, ext_w, exn_w,
+            name,
+            max_nodes_extant=cap,
+            seed=7,
+            show_legend=show_legend
+        )
 
     fig.tight_layout(rect=[0, 0, 1, 0.96])
-    fig.savefig(outfile, dpi=300, bbox_inches="tight")
+    fig.savefig(outfile, dpi=600, bbox_inches="tight")
     print(f"Saved: {outfile}")
 
 if __name__ == "__main__":
