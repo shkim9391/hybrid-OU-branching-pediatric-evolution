@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 # fig1_line_plot_with_bands_updated.py
 # Log-scale plot with ±SD shaded bands, safe zero handling, replicate aggregation, no hard-coded colors.
 
