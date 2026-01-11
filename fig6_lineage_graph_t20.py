@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 # figure6_lineage_graph_three_panels_t20.py
 # Hybrid OU–branching lineage snapshots for WT, priA, recG in one figure.
 # Shared snapshot at t = 20.0
