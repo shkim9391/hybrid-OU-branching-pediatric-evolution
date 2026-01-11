@@ -3,7 +3,7 @@
 
 # figure5_three_phase_planes.py
 # Three phase-plane panels (WT, priA, recG) for a hybrid OU–Branching model
-# Journal-ready: consistent styling, colorblind-safe, 2-column width, 600 dpi
+# Updated to use replicate-grouped OU parameters on the log10 scale (Table 1, Option A)
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 plt.rcParams.update({
     "figure.dpi": 100,
     "savefig.dpi": 600,
-    "font.size": 8.5,                     # small but readable for 2-column figs
+    "font.size": 8.5,
     "axes.titlesize": 9.5,
     "axes.labelsize": 9,
     "xtick.labelsize": 8,
@@ -32,14 +32,11 @@ T = 40.0
 dt = 0.05
 rng = np.random.default_rng(123)
 
-def ou_exact_step(y_prev, dt, mu, theta, sigma):
-    e = np.exp(-theta * dt)
-    m = mu + (y_prev - mu) * e
-    v = (sigma**2 / (2.0 * theta)) * (1.0 - e**2)
-    v = max(v, EPS)
-    return rng.normal(m, np.sqrt(v))
-
 def rates_from_y(y, lam0, mu0, alpha, beta, muY):
+    """
+    Demographic rates depend on deviation from lineage mean (y - muY).
+    y is on the log10 scale.
+    """
     lam = lam0 * np.exp(alpha * (y - muY))
     mud = mu0 * np.exp(-beta * (y - muY))
     return np.clip(lam, 0.0, 5.0), np.clip(mud, 0.0, 5.0)
@@ -52,7 +49,11 @@ def n_dot(y, n, lam0, mu0, alpha, beta, muY):
     return (lam - mud) * n
 
 def build_vector_field(ax, muY, theta, lam0, mu0, alpha, beta,
-                       ylim=(1, 5e4), yg=(-1.6, 1.6), Ny=23, Nx=25):
+                       ylim=(1, 5e4), x_span=1.6, Ny=23, Nx=25):
+    """
+    Build a quiver field over y in [muY-x_span, muY+x_span] and N in log space.
+    """
+    yg = (muY - x_span, muY + x_span)
     Yg = np.linspace(yg[0], yg[1], Nx)
     Ng = np.geomspace(ylim[0], ylim[1], Ny)
     Ymesh, Nmesh = np.meshgrid(Yg, Ng, indexing='xy')
@@ -65,21 +66,29 @@ def build_vector_field(ax, muY, theta, lam0, mu0, alpha, beta,
     norm[norm == 0] = 1.0
     U = dY / norm
     V = (dN / (Nmesh + EPS)) / norm
+    
+    ax.quiver(
+        Ymesh, Nmesh, U, V,
+        angles="xy",
+        width=0.0022,
+        scale=18,
+        color="0.65",
+        alpha=0.45,
+        rasterized=True
+    )
 
-    ax.quiver(Ymesh, Nmesh, U, V, angles='xy', width=0.0028, scale=16,
-              color='0.55', alpha=0.75)
-
-    # Stable OU manifold (Y = muY)
+    # OU mean manifold (Y = muY)
     ax.axvline(muY, ls='--', lw=1.0, color='0.4')
 
     # Population nullcline (lam = mu)
+    # Solve lam0*exp(alpha*(y-muY)) = mu0*exp(-beta*(y-muY))
     y_star = muY + np.log(mu0 / lam0) / (alpha + beta)
-    ax.axvline(y_star, ls=':', lw=1.0, color='#E66100')  # orange dotted
+    ax.axvline(y_star, ls=':', lw=1.3, color='#E66100')
 
 def simulate_trajectories(ax, muY, theta, sigma, lam0, mu0, alpha, beta,
                           starts, lw=1.5, alpha_line=0.95):
     """
-    starts: list of tuples (Y0, N0, color_hex)
+    starts: list of tuples (Y0, N0, color_hex) on the log10 scale for Y0
     """
     def ou_step(y):
         e = np.exp(-theta * dt)
@@ -88,8 +97,9 @@ def simulate_trajectories(ax, muY, theta, sigma, lam0, mu0, alpha, beta,
         v = max(v, EPS)
         return rng.normal(m, np.sqrt(v))
 
+    t = np.arange(0, T + dt, dt)
+
     for (Y0, N0, color) in starts:
-        t = np.arange(0, T + dt, dt)
         Y = np.empty_like(t)
         N = np.empty_like(t, dtype=float)
         Y[0], N[0] = Y0, N0
@@ -97,70 +107,65 @@ def simulate_trajectories(ax, muY, theta, sigma, lam0, mu0, alpha, beta,
         for k in range(1, t.size):
             Y[k] = ou_step(Y[k-1])
             lam, mud = rates_from_y(Y[k], lam0, mu0, alpha, beta, muY)
+
             if N[k-1] > 0:
                 births = rng.poisson(lam * N[k-1] * dt)
                 deaths = rng.poisson(mud * N[k-1] * dt)
                 Nk = N[k-1] + births - deaths
             else:
                 Nk = 0.0
+
             N[k] = max(0.0, min(Nk, MAX_N))
 
-        ax.plot(Y, np.maximum(N, 1.0), color=color, lw=lw, alpha=alpha_line)
+        step = 3  # plot every 3rd point
+        ax.plot(Y[::step], np.maximum(N[::step], 1.0), color=color, lw=lw, alpha=alpha_line, rasterized=True)
 
 # ------------------ Parameter sets ------------------
 # Demography (shared)
 lam0, mu0, alpha, beta = 0.30, 0.22, 0.90, 0.60
 
-# OU params per lineage
+# OU params per lineage (replicate-grouped MLEs on log10 scale)
 params = {
-    "WT":   dict(muY=3.105064e-06,  theta=01.000000e-01,   sigma=8.511509e-06),
-    "priA": dict(muY=1.555009e-05, theta=1.136503e-01, sigma=7.751312e-06),
-    "recG": dict(muY=1.376895e-07, theta=1.162200e-01, sigma=3.594900e-07),
+    "WT":   dict(muY=-6.799080, theta=0.775093, sigma=0.726647),
+    "priA": dict(muY=-5.000374, theta=0.116660, sigma=0.436483),
+    "recG": dict(muY=-7.652025, theta=8.515582, sigma=2.789438),
 }
 
-# Colorblind-safe colors for trajectories (Okabe–Ito palette + one)
+# Colors (Okabe–Ito palette)
 COLS = ["#0072B2", "#009E73", "#D55E00"]  # blue, green, vermilion
 
-starts_sets = [
-    [(-1.2, 40,  COLS[0]), (-0.3, 80, COLS[1]), (0.6, 25, COLS[2])],  # WT
-    [(-1.0, 30,  COLS[0]), (0.0,  50, COLS[1]), (0.8, 20, COLS[2])],  # priA
-    [(-0.8, 25,  COLS[0]), (0.2,  40, COLS[1]), (1.0, 15, COLS[2])],  # recG
-]
+# Use the same *offset* initial Y values relative to each lineage muY
+Y_OFFSETS = [-1.2, -0.3, +0.6]
+N_STARTS  = [40, 80, 25]
 
 # ------------------ Build figure ------------------
-# Two-column width ~180 mm ≈ 7.1 in; height ~3.6 in (tight)
 fig, axes = plt.subplots(1, 3, figsize=(7.2, 3.6), sharey=True)
 
-# Panel letters
 panel_labels = ["A", "B", "C"]
+x_span = 1.6
 
-for ax, (name, p), starts, letter in zip(axes, params.items(), starts_sets, panel_labels):
-    # Vector field
+for ax, (name, p), letter in zip(axes, params.items(), panel_labels):
+    starts = [(p["muY"] + Y_OFFSETS[i], N_STARTS[i], COLS[i]) for i in range(3)]
+
     build_vector_field(ax, p["muY"], p["theta"], lam0, mu0, alpha, beta,
-                       ylim=(1, 5e4), yg=(-1.6, 1.6), Ny=23, Nx=25)
-    # Stochastic trajectories
+                       ylim=(1, 5e4), x_span=x_span, Ny=18, Nx=19)
+    # and inside build_vector_field:
     simulate_trajectories(ax, p["muY"], p["theta"], p["sigma"],
-                          lam0, mu0, alpha, beta, starts)
+                          lam0, mu0, alpha, beta, starts, lw=1.1, alpha_line=0.80)
 
-    # Axes formatting
     ax.set_yscale("log")
-    ax.set_xlim(-1.6, 1.6)
+    ax.set_xlim(p["muY"] - x_span, p["muY"] + x_span)
     ax.set_ylim(1, 5e4)
-    ax.set_xlabel(r"Phenotype $Y_t$")
+   
     ax.grid(axis="y", which="both", alpha=0.22, linewidth=0.5)
 
-    # Small title + panel letter inside
     ax.set_title(name, pad=4, fontweight="bold")
     ax.text(0.02, 0.98, letter, transform=ax.transAxes,
             ha="left", va="top", fontsize=9, fontweight="bold")
-
-# Shared y-label only on left pane
+    
+fig.supxlabel(r"$Y_t=\log_{10}(\mathrm{mutation\ frequency})$")
+fig.subplots_adjust(bottom=0.16, wspace=0.18)
 axes[0].set_ylabel(r"Population size $N_t$ (log scale)")
-
-# Tight layout with top room for a concise super-title (optional)
-#fig.suptitle("Phase-plane diagrams of hybrid OU–branching model across lineages",
-           #  y=0.995, fontsize=10, fontweight="bold")
-#fig.tight_layout(rect=[0, 0, 1, 0.98])
 
 # ------------------ Save ------------------
 fig.savefig("figure5_three_phase_planes.png", dpi=600, bbox_inches="tight")
