@@ -6,8 +6,6 @@ This repository accompanies the Frontiers in Oncology article:
 
 **Kim S-H (2026). _A hybrid Ornstein-Uhlenbeck-Branching framework unifies microbial and pediatric tumor evolution_. Frontiers in Oncology. 16:1727973. doi: 10.3389/fonc.2026.1727973**
 
----
-
 ## Overview
 
 This repository contains the scripts, processed data tables, and figure-generation workflows used for the Frontiers in Oncology manuscript. The study presents a hybrid OU-branching perspective for evolutionary dynamics, connecting:
@@ -26,8 +24,6 @@ Broadly, the repository includes:
 - scripts for main figures,
 - a supplementary figure script,
 - and a table-construction script for manuscript reporting.
-
----
 
 ## Repository contents
 
@@ -63,8 +59,6 @@ The central modeling idea is that evolutionary systems often exhibit both:
 
 This repository focuses on figure-ready computational analysis and manuscript-specific outputs.
 
-⸻
-
 Main input data files
 
 mut_freq_data_clean.csv
@@ -97,8 +91,6 @@ Table3_pairwise_trajectory_metrics.csv
 Pairwise trajectory metric table used for manuscript reporting and comparisons.
 
 This file is likely used to summarize distances, transition-related quantities, or pairwise evolutionary trajectory comparisons reported in Table 3 or related downstream figures.
-
-⸻
 
 Script inventory
 
@@ -196,8 +188,6 @@ Typical role:
 	•	aggregation of resampled metrics,
 	•	manuscript-ready export for Table 3.
 
-⸻
-
 Suggested workflow
 
 A typical workflow from the repository root may be:
@@ -218,8 +208,6 @@ A practical interpretation is:
 	2.	generate manuscript main figures,
 	3.	generate the supplementary figure,
 	4.	construct the derived Table 3 output from grouped bootstrap summaries.
-
-⸻
 
 Likely data flow
 
@@ -247,8 +235,6 @@ A simple figure-to-script map is:
 	•	fig6_lineage_graph_t20.py → Main Figure 6
 	•	fig7_pediatric_precision_showcase_final_priA.py → Main Figure 7
 	•	supp_fig1_lifespan.py → Supplementary Figure S1
-
-⸻
 
 Typical Python loading examples
 
@@ -313,21 +299,15 @@ For a stronger public release, consider adding:
 	•	a figures/ directory for exported outputs
 	•	a short note in each script header describing its inputs and outputs
 
-⸻
-
 Data availability
 
 All processed data and code required to reproduce the analyses in the Frontiers in Oncology manuscript are included in this repository. No proprietary datasets or access restrictions apply to the materials provided here.
-
-⸻
 
 Citation
 
 If you use this repository, please cite:
 
 Kim S-H (2026). A hybrid Ornstein-Uhlenbeck-Branching framework unifies microbial and pediatric tumor evolution. Frontiers in Oncology. 16:1727973. doi:10.3389/fonc.2026.1727973
-
-⸻
 
 Author
 
