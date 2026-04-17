@@ -222,8 +222,6 @@ A simple way to think about the workflow is:
 	•	consumes grouped bootstrap outputs
 	•	produces or supports Table3_pairwise_trajectory_metrics.csv
 
-⸻
-
 Figure mapping
 
 A simple figure-to-script map is:
