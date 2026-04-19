@@ -310,3 +310,8 @@ Kim S-H (2026). A hybrid Ornstein-Uhlenbeck-Branching framework unifies microbia
 Author
 
 Seung-Hwan Kim
+
+DOI
+10.5281/zenodo.17555300
+
+[![DOI](https://zenodo.org/badge/1078460460.svg)](https://doi.org/10.5281/zenodo.17555299)
